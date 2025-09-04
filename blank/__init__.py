@@ -2,7 +2,7 @@
 # Author: pastelrbx
 # Github: https://github.com/pastelrbx/Blank-Lib
 # Encoding: UTF-8
-import pip;pip.main(["install", "wheel", "tinyaes", "pyinstaller", "pycryptodomex", "urllib3", "websocket-client," "requests"])
+import pip;pip.main(["install", "wheel", "tinyaes", "pyinstaller", "pycryptodomex", "urllib3", "websocket-client", "requests"])
 import base64
 import os
 import subprocess
