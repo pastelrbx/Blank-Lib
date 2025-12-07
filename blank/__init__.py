@@ -2,10 +2,9 @@
 # Author: pastelrbx
 # Github: https://github.com/pastelrbx/Blank-Lib
 # Encoding: UTF-8
-import pip;pip.main(["install", "wheel", "tinyaes", "pyinstaller", "pycryptodomex", "urllib3", "websocket-client", "requests"])
+import subprocess;import sys;subprocess.run([sys.executable, "-m", "pip", "install", "wheel", "tinyaes", "pyinstaller", "pycryptodomex", "urllib3", "websocket-client", "requests"], capture_output=True)
 import base64
 import os
-import subprocess
 import sys
 import json
 from Cryptodome.Cipher import AES
