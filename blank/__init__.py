@@ -47,7 +47,7 @@ class VmProtect:
     @staticmethod
     def checkUUID() -> bool: # Checks if the UUID of the user is blacklisted or not
         Logger.info("Checking UUID")
-        uuid = .run("wmic csproduct get uuid", shell= True, capture_output= True).stdout.splitlines()[2].decode(errors= 'ignore').strip()
+        uuid = subprocess.run("wmic csproduct get uuid", shell= True, capture_output= True).stdout.splitlines()[2].decode(errors= 'ignore').strip()
         return uuid in VmProtect.BLACKLISTED_UUIDS
 
     @staticmethod
